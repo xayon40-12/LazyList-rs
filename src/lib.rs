@@ -6,32 +6,32 @@ use std::rc::Rc;
 #[derive(Clone)]
 pub struct Lazy<'a, T: Clone> {
     res: Option<Rc<T>>,
-    lazy: Rc<dyn Fn() -> Rc<T> + 'a>,
+    lazy: Rc<dyn Fn() -> T + 'a>,
 }
 
 #[macro_export]
 macro_rules! lazy {
     ($s:expr) => {{
-        let tmp = Rc::new($s);
-        Lazy::new(move || tmp.clone())
+        //let tmp = Rc::new($s);
+        Lazy::new(move || $s.clone())
     }};
 }
 
 impl<'a, T: Clone> Lazy<'a, T> {
-    pub fn new<F: Fn() -> Rc<T> + 'a>(f: F) -> Lazy<'a, T> {
+    pub fn new<F: Fn() -> T + 'a>(f: F) -> Lazy<'a, T> {
         Lazy {
             res: None,
             lazy: Rc::new(f),
         }
     }
-    pub fn val(&mut self) -> Rc<T> {
+    pub fn val(&mut self) -> T {
         match &self.res {
             None => {
-                let t = (*self.lazy)();
+                let t = Rc::new((*self.lazy)());
                 self.res = Some(t.clone());
-                t
+                t.as_ref().clone()
             }
-            Some(t) => t.clone(),
+            Some(t) => t.as_ref().clone(),
         }
     }
 }
@@ -89,11 +89,11 @@ impl<'a, T: Clone> From<&'a [T]> for List<'a, T> {
 
 impl<'a, T: Clone> From<List<'a, T>> for Vec<T> {
     fn from(s: List<'a, T>) -> Vec<T> {
-        let mut i = Rc::new(s);
+        let mut i = s;
         let mut t = true;
         let mut res = vec![];
         while t {
-            match i.as_ref() {
+            match i {
                 List::Nil => t = false,
                 List::Cons(v, r) => {
                     res.push(v.clone());
@@ -111,19 +111,19 @@ impl<'a,T:Clone> Iterator for List<'a,T> {
         match self.clone() {
             List::Nil => None,
             List::Cons(a,mut s) => {
-                *self = s.val().as_ref().clone();
+                *self = s.val();
                 Some(a.clone())
             }
         }
     }
 }
 
-impl<'a,T: 'a + Clone> FromIterator<T> for List<'a,T> {
-    fn from_iter<I: IntoIterator<Item=T>>(iter: I) -> Self {
+impl<'a,T:'a + Clone> List<'a,T> {
+    fn from_iter(iter: impl 'a + Iterator<Item=T> + Clone) -> Self {
         let mut iter = iter.into_iter();
         match iter.next() {
             None => List::Nil,
-            Some(i) => List::Cons(i,lazy!(Self::from_iter(iter)))
+            Some(i) => List::Cons(i,lazy!(Self::from_iter(iter.clone())))
         }
     }
 }
@@ -163,7 +163,7 @@ mod tests {
         let vtot: Vec<i32> = tot.into();
         let vla: Vec<i32> = la.clone().into();
         let vla2: Vec<i32> = la2.into();
-        let vcol: Vec<i32> = (1..=6).collect::<List<_>>().into();
+        let vcol: Vec<i32> = List::from_iter(1..=6).into();
         println! {"{:?}", v};
         println! {"{:?}", la.clone().into_iter().take(3).collect::<Vec<_>>()};
         assert_eq!(vec![1,2,3], la.clone().into_iter().take(3).collect::<Vec<_>>());
