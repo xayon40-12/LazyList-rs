@@ -40,7 +40,7 @@ pub fn fuse<'a, N: 'a + Ord + Mul<Output=N> + Add<Output=N> + Copy>(aa: List<'a,
 #[cfg(test)]
 mod tests {
     use crate::*;
-    use crate::Once::*;
+    use crate::once::*;
     #[test]
     fn test_once() {
         let f = |(av,a)| (Vec::from(av),a);

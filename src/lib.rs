@@ -1,6 +1,5 @@
-pub mod Once;
+pub mod once;
 
-use std::iter::FromIterator;
 use std::rc::Rc;
 
 #[derive(Clone)]
