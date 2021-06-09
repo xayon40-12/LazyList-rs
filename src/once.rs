@@ -13,6 +13,10 @@ pub fn once<'a>(d: usize, m: usize) -> List<'a,(List<'a,usize>,usize)> {
     }
 }
 
+pub fn ionce<'a>(d: usize) -> List<'a,(List<'a,usize>,usize)> {
+    once(d, usize::max_value())
+}
+
 pub fn compact<'a, N: 'a + Ord + Mul<Output=N> + Add<Output=N> + Copy>(aaa: List<'a,List<'a,(List<'a,N>,N)>>) -> List<'a,(List<'a,N>,N)> {
     match aaa {
         Nil => Nil,
@@ -37,9 +41,21 @@ pub fn fuse<'a, N: 'a + Ord + Mul<Output=N> + Add<Output=N> + Copy>(aa: List<'a,
     }
 }
 
+pub fn unt<'a, N: 'a + Ord + Mul<Output=N> + Add<Output=N> + Copy>(aa: List<'a,(List<'a,N>,N)>, n: N) -> List<'a,(List<'a,N>,N)> {
+    match aa {
+        Nil => Nil,
+        Cons((al,a),ar) => {
+            if a > n {
+                Nil
+            } else {
+                Cons((al,a),lazy!(unt(ar.clone().val(),n)))
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::*;
     use crate::once::*;
     #[test]
     fn test_once() {
@@ -47,9 +63,7 @@ mod tests {
         println!{"{:?}", once(0,10).into_iter().map(f).collect::<Vec<_>>()};
         println!{"{:?}", once(1,10).into_iter().map(f).collect::<Vec<_>>()};
         println!{"{:?}", once(2,10).into_iter().map(f).collect::<Vec<_>>()};
-        println!{"{:?}", once(3,10000).into_iter().take(20).map(f).collect::<Vec<_>>()};
-        let l1 = List::from_iter((0..10).map(|i| (list![i],i*i)));
-        let l2 = List::from_iter((0..10).map(|i| { let i = i*2; (list![i],i*i)}));
-        println!("{:?}", fuse(l1,l2).map(f).into_iter().collect::<Vec<_>>());
+        println!{"{:?}", ionce(3).into_iter().take(20).map(f).collect::<Vec<_>>()};
+        println!{"{:?}", unt(ionce(3), 300).map(f).collect::<Vec<_>>()};
     }
 }
