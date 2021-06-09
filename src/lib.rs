@@ -10,10 +10,9 @@ pub struct Lazy<'a, T: Clone> {
 
 #[macro_export]
 macro_rules! lazy {
-    ($s:expr) => {{
-        //let tmp = Rc::new($s);
+    ($s:expr) => {
         Lazy::new(move || $s.clone())
-    }};
+    };
 }
 
 impl<'a, T: Clone> Lazy<'a, T> {
